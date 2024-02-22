@@ -1,9 +1,8 @@
 import { StatusBar } from 'expo-status-bar';
-import { ActivityIndicator, Alert, Button, Dimensions, Platform, SafeAreaView, StyleSheet, TextInput, View } from 'react-native';
+import { ActivityIndicator, Alert, Dimensions, Platform, SafeAreaView, StyleSheet, View } from 'react-native';
 import ListComponent from './src/ListComponent';
 import { useEffect, useState } from 'react';
 import SearchComponent from './src/SearchComponent';
-import { AutocompleteDropdownContextProvider } from 'react-native-autocomplete-dropdown';
 
 export default function App() {
   const [stopNames, setStopNames] = useState([])
@@ -11,7 +10,7 @@ export default function App() {
   const [data, setData] = useState([])
   const [stopsLoad, setStopsLoad] = useState(false)
   const [filterLoad, setFilterLoad] = useState(false)
-  const [stop, setStop] = useState('')
+  const [selectedStop, setSelectedStop] = useState(null)
   const headerHeight = Platform.OS === 'ios' ? 40 : 24
 
   const styles = StyleSheet.create({
@@ -49,6 +48,7 @@ export default function App() {
         if (!res.ok) {
           throw new Error('Pysäkin tietojen haku epäonnistui.')
         }
+        setSelectedStop(filteredStopNames.find((s) => s.id === stop).title)
         return res.json()
       })
       .then((res) => {
@@ -57,13 +57,14 @@ export default function App() {
       })
       .catch((err) => {
         setStopsLoad(false)
+        setSelectedStop(null)
         Alert.alert(err.name, err.message)
       })
   }
 
   function handleInputChange(val) {
     setFilteredStopNames(
-      stopNames.filter((s) => s.title.includes(val))
+      stopNames.filter((s) => s.title.toLowerCase().includes(val.toLowerCase()))
       )
     setFilterLoad(false)
   }
@@ -73,11 +74,10 @@ export default function App() {
   }
 
   return (
-      // <AutocompleteDropdownContextProvider>
     <View style={styles.container}>
       <MyStatusBar style="auto" backgroundColor='rgb(240, 179, 35)' />
       <SearchComponent
-        stop={stop}
+        stop={selectedStop}
         onInputChange={handleInputChange}
         stopNames={filteredStopNames}
         onSelect={handleButton}
@@ -85,7 +85,7 @@ export default function App() {
         onFilterStart={handleFilterStart}
       />
       
-      <ListComponent list={data} />
+      <ListComponent selectedStop={selectedStop} list={data} />
       { stopsLoad && 
         <View
           style={{
@@ -101,8 +101,6 @@ export default function App() {
           </View>
       }
     </View>
-    // </AutocompleteDropdownContextProvider>
-
   );
 }
 

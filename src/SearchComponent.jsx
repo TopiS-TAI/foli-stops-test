@@ -1,11 +1,27 @@
-import { useState } from "react";
-import { FlatList, StyleSheet, TextInput, View, Text, Dimensions, Pressable, ActivityIndicator, TouchableOpacity, Keyboard, Platform } from "react-native"
+import { useRef, useState } from "react";
+import {
+    FlatList,
+    StyleSheet,
+    TextInput,
+    View,
+    Text,
+    Dimensions,
+    Pressable,
+    ActivityIndicator,
+    TouchableOpacity,
+    Keyboard, 
+    Platform } from "react-native"
+import { FontAwesomeIcon } from '@fortawesome/react-native-fontawesome'
+import { faCircleXmark } from '@fortawesome/free-solid-svg-icons/faCircleXmark'
+
 
 function SearchComponent({stop, onInputChange, stopNames, onSelect, filterLoad, onFilterStart}) {
     const [open, setOpen] = useState(false)
     const [inputValue, setInputValue] = useState('')
     const [inputWidth, setInputWidth] = useState(null)
     const [debouncer, setDebouncer] = useState(null)
+
+    const inputRef = useRef()
 
     const styles = StyleSheet.create({
         header: {
@@ -27,7 +43,7 @@ function SearchComponent({stop, onInputChange, stopNames, onSelect, filterLoad, 
             left: 10,
             top: Platform.OS === 'ios' ? 60 : 50,
             zIndex: 10,
-            width: inputWidth + 36,
+            width: inputWidth + 36 + 40,
             display: open ? 'flex' : 'none',
             maxHeight: Dimensions.get('screen').height - 100,
             overflow: 'hidden'
@@ -37,10 +53,25 @@ function SearchComponent({stop, onInputChange, stopNames, onSelect, filterLoad, 
             borderBottomWidth: 1,
             borderBottomColor: '#CCC',
         },
+        emptyContainer: {
+            backgroundColor: '#FED',
+            height: 48,
+            alignItems: 'center',
+            justifyContent: 'center',
+        },
+        selectedRow: {
+            backgroundColor: '#EDA'
+        },
         item: {
             paddingVertical: 10,
             paddingHorizontal: 8,
             fontSize: 16,
+        },
+        emptyItem: {
+            paddingVertical: 10,
+            fontSize: 18,
+            fontWeight: '600',
+            opacity: 0.3,
         },
         indicator: {
             color: 'rgb(240, 179, 35)',
@@ -49,7 +80,7 @@ function SearchComponent({stop, onInputChange, stopNames, onSelect, filterLoad, 
             height: 40,
         },
         button: {
-            backgroundColor: "#EEE",
+            backgroundColor: "#FFF",
             width: 40,
             alignItems: 'center',
             justifyContent: 'center',
@@ -81,6 +112,7 @@ function SearchComponent({stop, onInputChange, stopNames, onSelect, filterLoad, 
 
     function clearInput() {
         setInputValue('')
+        inputRef.current.focus()
     }
 
     return (
@@ -91,6 +123,7 @@ function SearchComponent({stop, onInputChange, stopNames, onSelect, filterLoad, 
                 placeholder="Pysäkki"
                 value={inputValue}
                 keyboardType='default'
+                ref={inputRef}
                 onChangeText={value => handleInputChange(value)}
                 onSubmitEditing={Keyboard.dismiss}
                 onLayout={(event) => setInputWidth(event.nativeEvent.layout.width)}
@@ -100,20 +133,20 @@ function SearchComponent({stop, onInputChange, stopNames, onSelect, filterLoad, 
                 style={[styles.button, styles.clearButton]}
                 onPress={clearInput}
                 >
-                    <Text>X</Text>
+                    <FontAwesomeIcon size={20} color='#CCC' icon={faCircleXmark} />
             </TouchableOpacity>
         </View>
         <FlatList
             data={stopNames}
             style={styles.list}
             renderItem={({item}) => (
-                <Pressable style={styles.itemContainer} onPress={() => handleMenuPress(item)}>
+                <Pressable style={({pressed}) => pressed ? styles.selectedRow : styles.itemContainer } onPress={() => handleMenuPress(item)}>
                     <Text style={styles.item}>{item.title}</Text>
                 </Pressable>
             )}
             ListEmptyComponent={() => (
-                <View style={styles.itemContainer}>
-                    <Text style={styles.item}>Ei pysäkkejä</Text>
+                <View style={styles.emptyContainer}>
+                    <Text style={styles.emptyItem}>Ei pysäkkejä</Text>
                 </View>
             )}
             />
