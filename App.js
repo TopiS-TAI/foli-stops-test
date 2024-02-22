@@ -1,7 +1,26 @@
 import { StatusBar } from 'expo-status-bar';
-import { Alert, Button, Dimensions, Platform, SafeAreaView, StyleSheet, TextInput, View } from 'react-native';
+import { ActivityIndicator, Alert, Button, Dimensions, Platform, SafeAreaView, StyleSheet, TextInput, View } from 'react-native';
 import ListComponent from './src/ListComponent';
 import { useEffect, useState } from 'react';
+import SearchComponent from './src/SearchComponent';
+import { AutocompleteDropdownContextProvider } from 'react-native-autocomplete-dropdown';
+
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    backgroundColor: '#fff',
+    alignItems: 'stretch',
+    justifyContent: 'flex-start',
+    marginTop: Platform.OS === 'ios' ? 40 : 24,
+    fontSize: 18
+  },
+  item: {
+    padding: 10,
+    fontSize: 18,
+    height: 44,
+    textAlign: 'center'
+  }
+})
 
 export default function App() {
   const lista = [
@@ -15,12 +34,14 @@ export default function App() {
   const [data, setData] = useState(lista)
   const [load, setLoad] = useState(false)
   const [stop, setStop] = useState('')
-  const [error, setError] = useState(null)
 
   useEffect(() => {
     fetch('http://data.foli.fi/siri/sm')
       .then((res) => res.json())
-      .then((res) => setStopNames(res))
+      .then((res) => {
+        const mappedNames = Object.entries(res).map((e) => {return {id: e[0], title: e[0] + ' ' + e[1].stop_name}} )
+        setStopNames(mappedNames)
+      })
       .catch((err) => Alert.alert(err.name, err.message))
   })
 
@@ -44,23 +65,13 @@ export default function App() {
   }
 
   return (
+      <AutocompleteDropdownContextProvider>
     <View style={styles.container}>
       <MyStatusBar style="auto" backgroundColor='rgb(240, 179, 35)' />
 
-      <View style={styles.header}>
-      <TextInput
-        style={{height: 40, backgroundColor: '#FFF', flex: 1, paddingLeft: 8, fontSize: 18}}
-        placeholder="Pysäkki"
-        onChangeText={newText => setStop(newText)}
-        defaultValue={stop}
-        keyboardType='number-pad'
-      />
-        <Button
-          onPress={handleButton}
-          title='Hae'
-          
-          />
-      </View>
+        <SearchComponent stop={stop} setStop={setStop} stopNames={stopNames} onSelect={handleButton} />
+
+      
       <ListComponent list={data} />
       { load && 
         <View
@@ -68,35 +79,19 @@ export default function App() {
             position: 'absolute',
             width: Dimensions.get('screen').width,
             height: Dimensions.get('screen').height,
-            backgroundColor: "#FFF", opacity: 0.75
-          }} />
+            backgroundColor: "#FFF", opacity: 0.75,
+            display: 'flex',
+            alignContent: 'center',
+            justifyContent: 'center'
+          }}>
+            <ActivityIndicator size="large" />
+          </View>
       }
     </View>
+    </AutocompleteDropdownContextProvider>
+
   );
 }
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: '#fff',
-    alignItems: 'stretch',
-    justifyContent: 'flex-start',
-    marginTop: Platform.OS === 'ios' ? 40 : 24,
-    fontSize: 18
-  },
-  item: {
-    padding: 10,
-    fontSize: 18,
-    height: 44,
-    textAlign: 'center'
-  },
-  header: {
-    backgroundColor: 'rgb(240, 179, 35)',
-    display: 'flex',
-    flexDirection: 'row',
-    padding: 10,
-  }
-});
 
 const MyStatusBar = ({backgroundColor, ...props}) => (
   <View style={{ backgroundColor: backgroundColor }}>
