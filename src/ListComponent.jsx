@@ -51,6 +51,11 @@ function ListComponent({list}) {
                         <Text style={styles.item}>{getTime(item.expecteddeparturetime)}</Text>
                     </View>
                 )}
+                ListEmptyComponent={() => (
+                  <View style={styles.itemContainer}>
+                    <Text style={styles.item}>Valitse pysäkki</Text>
+                  </View>
+                )}
                 />
     )
 }

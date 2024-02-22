@@ -1,41 +1,123 @@
-import { Alert, Button, StyleSheet, TextInput, View } from "react-native"
-import { AutocompleteDropdown } from "react-native-autocomplete-dropdown";
+import { useState } from "react";
+import { FlatList, StyleSheet, TextInput, View, Text, Dimensions, Pressable, ActivityIndicator, TouchableOpacity, Keyboard, Platform } from "react-native"
 
-const styles = StyleSheet.create({
-    header: {
-      backgroundColor: 'rgb(240, 179, 35)',
-      display: 'flex',
-      flexDirection: 'row',
-      padding: 10,
+function SearchComponent({stop, onInputChange, stopNames, onSelect, filterLoad, onFilterStart}) {
+    const [open, setOpen] = useState(false)
+    const [inputValue, setInputValue] = useState('')
+    const [inputWidth, setInputWidth] = useState(null)
+    const [debouncer, setDebouncer] = useState(null)
+
+    const styles = StyleSheet.create({
+        header: {
+          backgroundColor: 'rgb(240, 179, 35)',
+          display: 'flex',
+          flexDirection: 'row',
+          padding: 10,
+          zIndex: 5
+        },
+        input: {
+            height: 40,
+            backgroundColor: '#FFF',
+            flex: 1,
+            paddingLeft: 8, 
+            fontSize: 18
+        },
+        list: {
+            position: 'absolute',
+            left: 10,
+            top: Platform.OS === 'ios' ? 60 : 50,
+            zIndex: 10,
+            width: inputWidth + 36,
+            display: open ? 'flex' : 'none',
+            maxHeight: Dimensions.get('screen').height - 100,
+            overflow: 'hidden'
+        },
+        itemContainer: {
+            backgroundColor: '#FED',
+            borderBottomWidth: 1,
+            borderBottomColor: '#CCC',
+        },
+        item: {
+            paddingVertical: 10,
+            paddingHorizontal: 8,
+            fontSize: 16,
+        },
+        indicator: {
+            color: 'rgb(240, 179, 35)',
+            paddingHorizontal: 8,
+            backgroundColor: "#FFF",
+            height: 40,
+        },
+        button: {
+            backgroundColor: "#EEE",
+            width: 40,
+            alignItems: 'center',
+            justifyContent: 'center',
+        },
+        clearButton: {
+            minWidth: 40,
+            flexBasis: 40,
+        }
+      });
+
+    function handleMenuPress(item) {
+        setOpen(false)
+        setInputValue(item.title)
+        onSelect(item.id)
     }
-  });
 
-function SearchComponent({stop, setStop, stopNames, onSelect}) {
+    function handleInputChange(text) {
+        onFilterStart()
+        setInputValue(text)
+        !open && setOpen(true)
+        if (debouncer) {
+            clearTimeout(debouncer)
+            setDebouncer(null)
+        }
+        setDebouncer(setTimeout(() => {
+            onInputChange(text)
+        }, 500))
+    }
+
+    function clearInput() {
+        setInputValue('')
+    }
+
     return (
+        <>
         <View style={styles.header}>
-            {/* <AutocompleteDropdown
-                containerStyle={{ flex: 1, fontSize: 18}}
-                inputContainerStyle={{backgroundColor: '#FFF'}}
-                clearOnFocus={false}
-                closeOnBlur={true}
-                closeOnSubmit={false}
-                initialValue={{ id: '20' }} // or just '2'
-                onSelectItem={(item) => setStop(item && item.id)}
-                dataSet={stopNames}
-                /> */}
             <TextInput
-                style={{height: 40, backgroundColor: '#FFF', flex: 1, paddingLeft: 8, fontSize: 18}}
+                style={styles.input}
                 placeholder="Pysäkki"
-                onChangeText={newText => setStop(newText)}
-                defaultValue={stop}
-                keyboardType='number-pad'
+                value={inputValue}
+                keyboardType='default'
+                onChangeText={value => handleInputChange(value)}
+                onSubmitEditing={Keyboard.dismiss}
+                onLayout={(event) => setInputWidth(event.nativeEvent.layout.width)}
             />
-            <Button
-                onPress={onSelect}
-                title='Hae'
-                
-                />
+            <ActivityIndicator style={styles.indicator} color="rgb(240, 179, 35)" animating={filterLoad}/>
+            <TouchableOpacity
+                style={[styles.button, styles.clearButton]}
+                onPress={clearInput}
+                >
+                    <Text>X</Text>
+            </TouchableOpacity>
         </View>
+        <FlatList
+            data={stopNames}
+            style={styles.list}
+            renderItem={({item}) => (
+                <Pressable style={styles.itemContainer} onPress={() => handleMenuPress(item)}>
+                    <Text style={styles.item}>{item.title}</Text>
+                </Pressable>
+            )}
+            ListEmptyComponent={() => (
+                <View style={styles.itemContainer}>
+                    <Text style={styles.item}>Ei pysäkkejä</Text>
+                </View>
+            )}
+            />
+        </>
     )
 }
 

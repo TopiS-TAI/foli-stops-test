@@ -5,35 +5,31 @@ import { useEffect, useState } from 'react';
 import SearchComponent from './src/SearchComponent';
 import { AutocompleteDropdownContextProvider } from 'react-native-autocomplete-dropdown';
 
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: '#fff',
-    alignItems: 'stretch',
-    justifyContent: 'flex-start',
-    marginTop: Platform.OS === 'ios' ? 40 : 24,
-    fontSize: 18
-  },
-  item: {
-    padding: 10,
-    fontSize: 18,
-    height: 44,
-    textAlign: 'center'
-  }
-})
-
 export default function App() {
-  const lista = [
-    {
-      lineref: '123',
-      destinationdisplay: 'Kauppatori-Linja-autoasema',
-      expecteddeparturetime: 1708456455
-    }
-  ]
   const [stopNames, setStopNames] = useState([])
-  const [data, setData] = useState(lista)
-  const [load, setLoad] = useState(false)
+  const [filteredStopNames, setFilteredStopNames] = useState([])
+  const [data, setData] = useState([])
+  const [stopsLoad, setStopsLoad] = useState(false)
+  const [filterLoad, setFilterLoad] = useState(false)
   const [stop, setStop] = useState('')
+  const headerHeight = Platform.OS === 'ios' ? 40 : 24
+
+  const styles = StyleSheet.create({
+    container: {
+      flex: 1,
+      backgroundColor: '#fff',
+      alignItems: 'stretch',
+      justifyContent: 'flex-start',
+      marginTop: headerHeight,
+      fontSize: 18
+    },
+    item: {
+      padding: 10,
+      fontSize: 18,
+      height: 44,
+      textAlign: 'center'
+    }
+  })
 
   useEffect(() => {
     fetch('http://data.foli.fi/siri/sm')
@@ -41,12 +37,13 @@ export default function App() {
       .then((res) => {
         const mappedNames = Object.entries(res).map((e) => {return {id: e[0], title: e[0] + ' ' + e[1].stop_name}} )
         setStopNames(mappedNames)
+        setFilteredStopNames(mappedNames)
       })
       .catch((err) => Alert.alert(err.name, err.message))
-  })
+  }, [])
 
-  function handleButton() {
-    setLoad(true)
+  function handleButton(stop) {
+    setStopsLoad(true)
     fetch('http://data.foli.fi/siri/sm/' + stop)
       .then((res) => {
         if (!res.ok) {
@@ -55,25 +52,41 @@ export default function App() {
         return res.json()
       })
       .then((res) => {
-        setLoad(false)
+        setStopsLoad(false)
         setData(res.result)
       })
       .catch((err) => {
-        setLoad(false)
+        setStopsLoad(false)
         Alert.alert(err.name, err.message)
       })
   }
 
+  function handleInputChange(val) {
+    setFilteredStopNames(
+      stopNames.filter((s) => s.title.includes(val))
+      )
+    setFilterLoad(false)
+  }
+
+  function handleFilterStart() {
+    setFilterLoad(true)
+  }
+
   return (
-      <AutocompleteDropdownContextProvider>
+      // <AutocompleteDropdownContextProvider>
     <View style={styles.container}>
       <MyStatusBar style="auto" backgroundColor='rgb(240, 179, 35)' />
-
-        <SearchComponent stop={stop} setStop={setStop} stopNames={stopNames} onSelect={handleButton} />
-
+      <SearchComponent
+        stop={stop}
+        onInputChange={handleInputChange}
+        stopNames={filteredStopNames}
+        onSelect={handleButton}
+        filterLoad={filterLoad}
+        onFilterStart={handleFilterStart}
+      />
       
       <ListComponent list={data} />
-      { load && 
+      { stopsLoad && 
         <View
           style={{
             position: 'absolute',
@@ -88,7 +101,7 @@ export default function App() {
           </View>
       }
     </View>
-    </AutocompleteDropdownContextProvider>
+    // </AutocompleteDropdownContextProvider>
 
   );
 }
