@@ -13,13 +13,19 @@ import {
     Platform } from "react-native"
 import { FontAwesomeIcon } from '@fortawesome/react-native-fontawesome'
 import { faCircleXmark } from '@fortawesome/free-solid-svg-icons/faCircleXmark'
+import { faLocationCrosshairs } from "@fortawesome/free-solid-svg-icons";
 
+import * as Location from 'expo-location';
 
 function SearchComponent({stop, onInputChange, stopNames, onSelect, filterLoad, onFilterStart}) {
     const [open, setOpen] = useState(false)
     const [inputValue, setInputValue] = useState('')
     const [inputWidth, setInputWidth] = useState(null)
     const [debouncer, setDebouncer] = useState(null)
+    const [location, setLocation] = useState(null)
+    const [locationPermission, setLocationPermission] = useState(false)
+    const [locationLoad, setLocationLoad] = useState(false)
+    const [locationRect, setLocationRect] = useState(null)
 
     const inputRef = useRef()
 
@@ -80,14 +86,28 @@ function SearchComponent({stop, onInputChange, stopNames, onSelect, filterLoad, 
             height: 40,
         },
         button: {
-            backgroundColor: "#FFF",
-            width: 40,
             alignItems: 'center',
             justifyContent: 'center',
         },
         clearButton: {
+            width: 40,
+            backgroundColor: "#FFF",
             minWidth: 40,
             flexBasis: 40,
+        },
+        locationButton: {
+            marginLeft: 10,
+            width: 40,
+            backgroundColor: "#EEE",
+            minWidth: 40,
+            flexBasis: 40,
+            borderRadius: 8,
+        },
+        locationDenied: {
+            backgroundColor: 'red'
+        },
+        locationLoading: {
+            backgroundColor: "blue"
         }
       });
 
@@ -115,6 +135,25 @@ function SearchComponent({stop, onInputChange, stopNames, onSelect, filterLoad, 
         inputRef.current.focus()
     }
 
+    async function getLocation() {
+        setLocationLoad(true)
+      
+        let { status } = await Location.requestForegroundPermissionsAsync();
+        if (status !== 'granted') {
+            setErrorMsg('Permission to access location was denied');
+            setLocationPermission(false)
+            setLocationLoad(false)
+            return;
+        }
+    
+        let location = await Location.getCurrentPositionAsync({});
+        console.log('location', location)
+        setLocation(location);
+        setLocationPermission(true)
+        setLocationLoad(false)
+          
+    }
+
     return (
         <>
         <View style={styles.header}>
@@ -134,6 +173,12 @@ function SearchComponent({stop, onInputChange, stopNames, onSelect, filterLoad, 
                 onPress={clearInput}
                 >
                     <FontAwesomeIcon size={20} color='#CCC' icon={faCircleXmark} />
+            </TouchableOpacity>
+            <TouchableOpacity
+                style={[styles.button, styles.locationButton, locationPermission ? null : styles.locationDenied, locationLoad ? styles.locationLoading : null]}
+                onPress={getLocation}
+                >
+                    <FontAwesomeIcon size={20} color='#CCC' icon={faLocationCrosshairs} />
             </TouchableOpacity>
         </View>
         <FlatList
